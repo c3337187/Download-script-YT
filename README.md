@@ -51,4 +51,3 @@ python build_exe.py
 Скрипт проверит зависимости, запустит PyInstaller и по окончании предложит нажать любую клавишу, чтобы закрыть окно.
 
 Error messages are written to `script.log` in the script folder.
-
