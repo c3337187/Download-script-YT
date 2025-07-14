@@ -1,6 +1,7 @@
 import os
 import sys
 import subprocess
+import atexit
 import threading
 import time
 from urllib.parse import urlparse
@@ -15,12 +16,26 @@ required_packages = [
     'keyboard',
     'pillow',
 ]
+installed_new = False
 for package in required_packages:
     try:
         __import__(package if package != 'beautifulsoup4' else 'bs4')
     except ImportError:
         print(f"⏳ Устанавливается пакет: {package}")
-        subprocess.check_call([sys.executable, '-m', 'pip', 'install', package])
+        subprocess.check_call([
+            sys.executable,
+            '-m',
+            'pip',
+            'install',
+            '--quiet',
+            '--disable-pip-version-check',
+            package,
+        ])
+        installed_new = True
+
+if installed_new:
+    print("✅ Зависимости установлены. Перезапустите скрипт.")
+    sys.exit(0)
 
 import yt_dlp
 import requests
@@ -42,6 +57,29 @@ DOWNLOAD_LIST = os.path.join(BASE_FOLDER, 'download-list')
 os.makedirs(VIDEOS_FOLDER, exist_ok=True)
 os.makedirs(PLAYLIST_FOLDER, exist_ok=True)
 os.makedirs(PICTURES_FOLDER, exist_ok=True)
+
+
+def ensure_single_instance() -> None:
+    """Предотвращает запуск нескольких экземпляров скрипта."""
+    if sys.platform.startswith('win'):
+        import msvcrt
+        lock_path = os.path.join(BASE_FOLDER, 'script.lock')
+        lock_file = open(lock_path, 'w')
+        try:
+            msvcrt.locking(lock_file.fileno(), msvcrt.LK_NBLCK, 1)
+        except OSError:
+            print('Скрипт уже запущен.')
+            sys.exit(0)
+
+        def release_lock() -> None:
+            try:
+                msvcrt.locking(lock_file.fileno(), msvcrt.LK_UNLCK, 1)
+                lock_file.close()
+                os.remove(lock_path)
+            except Exception:
+                pass
+
+        atexit.register(release_lock)
 
 
 def download_video(url, folder):
@@ -149,6 +187,8 @@ def add_link_from_clipboard() -> None:
 def main() -> None:
     """Запускает горячие клавиши и значок в трее."""
 
+    ensure_single_instance()
+
     def on_download(icon, item):
         download_all()
 
@@ -168,9 +208,9 @@ def main() -> None:
     keyboard.add_hotkey('ctrl+b', add_link_from_clipboard)
     keyboard.add_hotkey('ctrl+shift+b', download_all)
 
-    threading.Thread(target=tray_icon.run, daemon=True).start()
+    tray_icon.run_detached()
 
-    print('Горячие клавиши активны. Нажмите Ctrl+B для добавления ссылки.')
+    print('Значок размещён в трее. Горячие клавиши активны. Нажмите Ctrl+B для добавления ссылки.')
     keyboard.wait()
 
 if __name__ == '__main__':
