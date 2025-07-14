@@ -18,7 +18,6 @@ import threading
 from PIL import Image
 import subprocess
 
-
 def get_base_folder() -> str:
     """Returns the folder where persistent files should be stored."""
     if getattr(sys, 'frozen', False):
@@ -41,8 +40,6 @@ LOG_FILE = os.path.join(BASE_FOLDER, 'script.log')
 INFO_FILE = resource_path('info.txt')
 
 INFO_FILE = os.path.join(BASE_FOLDER, 'info.txt')
-=======
-
 
 # Эти переменные инициализируются после загрузки конфигурации
 DOWNLOADS_FOLDER = os.path.join(BASE_FOLDER, 'Downloads')
@@ -229,19 +226,16 @@ def download_all(icon: Optional[pystray.Icon] = None) -> None:
 
 
 def add_link_from_clipboard() -> None:
-    """Копирует выделенный текст в буфер и сохраняет его как ссылку."""
-    before = pyperclip.paste()
+    """Copies selected text and saves it as a link."""
+    # Send Ctrl+C to grab the current selection. Wait briefly for the
+    # clipboard to update and then read its contents.  If the clipboard
+    # does not change, fall back to whatever text was already there.
+    previous = pyperclip.paste()
     keyboard.send('ctrl+c')
-    end = time.time() + 1.5
-    url = ""
-    while time.time() < end:
-        url = pyperclip.paste().strip()
-        if url and url != before:
-            break
-        time.sleep(0.05)
-    if not url or url == before:
+    time.sleep(0.2)
+    url = pyperclip.paste().strip() or previous.strip()
+    if not url:
         print("Не удалось скопировать ссылку. Возможно, она не выделена.")
-
         return
 
     existing = []
@@ -270,8 +264,6 @@ def main() -> None:
 
     if not os.path.exists(DOWNLOAD_LIST):
         open(DOWNLOAD_LIST, 'a', encoding='utf-8').close()
-=======
-
 
     add_hotkey = config.get('add_hotkey', DEFAULT_CONFIG['add_hotkey'])
     download_hotkey = config.get('download_hotkey', DEFAULT_CONFIG['download_hotkey'])
@@ -335,7 +327,6 @@ def main() -> None:
                 icon.notify('Информация', 'Файл info.txt не найден')
         except Exception as e:
             logging.error('Не удалось открыть info.txt: %s', e)
-
 
     icon_path = resource_path('ico.ico')
     image = Image.open(icon_path) if os.path.exists(icon_path) else None

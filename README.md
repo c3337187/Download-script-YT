@@ -30,7 +30,6 @@ are always saved to a `Downloads` folder located beside the script. Subfolders
 for videos, playlists and pictures are created automatically and this location
 cannot be changed.
 
-
 ### Building an executable
 
 Use PyInstaller to bundle the script. Include the tray icon file and the
