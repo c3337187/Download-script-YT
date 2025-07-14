@@ -13,7 +13,6 @@ from bs4 import BeautifulSoup
 import keyboard
 import pystray
 import pyperclip
-
 import threading
 
 from PIL import Image
@@ -128,6 +127,7 @@ def download_video(url, folder):
         logging.error('Ошибка при скачивании YouTube-содержимого: %s', e)
         print(f"Ошибка при скачивании YouTube-содержимого: {e}")
 
+
 def download_playlist(url, folder):
     ydl_opts = {
         'format': 'best',
@@ -143,6 +143,7 @@ def download_playlist(url, folder):
     except Exception as e:
         logging.error('Ошибка при скачивании плейлиста: %s', e)
         print(f"Ошибка при скачивании плейлиста: {e}")
+
 
 def download_pinterest_image(url, folder):
     try:
@@ -251,6 +252,7 @@ def add_link_from_clipboard() -> None:
         f.write(url + '\n')
     print(f"Добавлено в список: {url}")
 
+
 def main() -> None:
     """Запускает горячие клавиши и значок в трее."""
 
@@ -341,4 +343,3 @@ def main() -> None:
 
 if __name__ == '__main__':
     main()
-
