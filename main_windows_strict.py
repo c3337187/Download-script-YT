@@ -13,8 +13,6 @@ from bs4 import BeautifulSoup
 import keyboard
 import pystray
 import pyperclip
-from tqdm import tqdm
-
 import threading
 
 from PIL import Image
@@ -115,26 +113,12 @@ def ensure_single_instance() -> None:
 
 
 def download_video(url, folder):
-    bar = tqdm(total=100, desc='Видео', unit='%')
-    def hook(d):
-        if d['status'] == 'downloading':
-            total = d.get('total_bytes') or d.get('total_bytes_estimate')
-            if total:
-                percent = d.get('downloaded_bytes', 0) / total * 100
-                bar.n = int(percent)
-                bar.refresh()
-        elif d['status'] == 'finished':
-            bar.n = 100
-            bar.refresh()
-            bar.close()
-
     ydl_opts = {
         'format': 'best',
         'outtmpl': os.path.join(folder, '%(title)s.%(ext)s'),
         'merge_output_format': 'mp4',
-        'quiet': True,
+        'quiet': False,
         'no_warnings': True,
-        'progress_hooks': [hook],
     }
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -143,28 +127,15 @@ def download_video(url, folder):
         logging.error('Ошибка при скачивании YouTube-содержимого: %s', e)
         print(f"Ошибка при скачивании YouTube-содержимого: {e}")
 
-def download_playlist(url, folder):
-    bar = tqdm(total=100, desc='Плейлист', unit='%')
-    def hook(d):
-        if d['status'] == 'downloading':
-            total = d.get('total_bytes') or d.get('total_bytes_estimate')
-            if total:
-                percent = d.get('downloaded_bytes', 0) / total * 100
-                bar.n = int(percent)
-                bar.refresh()
-        elif d['status'] == 'finished':
-            bar.n = 100
-            bar.refresh()
-            bar.close()
 
+def download_playlist(url, folder):
     ydl_opts = {
         'format': 'best',
         'outtmpl': os.path.join(folder, '%(title)s.%(ext)s'),
         'merge_output_format': 'mp4',
-        'quiet': True,
+        'quiet': False,
         'no_warnings': True,
         'yes_playlist': True,
-        'progress_hooks': [hook],
     }
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -172,6 +143,7 @@ def download_playlist(url, folder):
     except Exception as e:
         logging.error('Ошибка при скачивании плейлиста: %s', e)
         print(f"Ошибка при скачивании плейлиста: {e}")
+
 
 def download_pinterest_image(url, folder):
     try:
@@ -237,12 +209,6 @@ def download_all(icon: Optional[pystray.Icon] = None) -> None:
                 print("Список ссылок пуст.")
                 return
 
-            if icon is not None:
-                try:
-                    icon.notify('Start', 'Начато скачивание')
-                except Exception:
-                    pass
-
             for url in urls:
                 handle_url(url)
 
@@ -262,20 +228,12 @@ def download_all(icon: Optional[pystray.Icon] = None) -> None:
 
 def add_link_from_clipboard() -> None:
     """Copy the current selection and append it to download-list.txt."""
-    # Store current clipboard text and attempt to copy the highlighted text.
-    previous = pyperclip.paste()
+    # Clear clipboard and send Ctrl+C to copy the highlighted text. Waiting
+    # a short moment ensures the clipboard is updated before reading it.
     pyperclip.copy('')
     keyboard.press_and_release('ctrl+c')
-
-    # Wait until the clipboard changes (up to ~2 seconds)
-    new_text = ''
-    for _ in range(20):
-        time.sleep(0.1)
-        new_text = pyperclip.paste()
-        if new_text and new_text != previous:
-            break
-
-    url = new_text.strip()
+    time.sleep(0.2)
+    url = pyperclip.paste().strip()
     if not url:
         print("Не удалось скопировать ссылку. Возможно, она не выделена.")
         return
@@ -293,6 +251,7 @@ def add_link_from_clipboard() -> None:
     with open(DOWNLOAD_LIST, 'a', encoding='utf-8') as f:
         f.write(url + '\n')
     print(f"Добавлено в список: {url}")
+
 
 def main() -> None:
     """Запускает горячие клавиши и значок в трее."""

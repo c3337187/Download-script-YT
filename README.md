@@ -1,36 +1,39 @@
 # Download-script-YT
 
-Небольшая утилита для сохранения ссылок по горячей клавише и последующей их загрузки с помощью yt-dlp.
+Utility to queue links from the clipboard and download them with yt-dlp.
 
-Перед первым использованием убедитесь, что установлены все необходимые библиотеки. Запустите:
+Before using the script make sure all required packages are installed. Run:
 
 ```bash
 python check_packages.py
 ```
 
-Или установите их вручную:
+Or install them manually:
 
 ```bash
-pip install yt_dlp pyperclip requests beautifulsoup4 pystray keyboard pillow tqdm pywin32
+pip install yt_dlp pyperclip requests beautifulsoup4 pystray keyboard pillow pywin32
 ```
 
-`pywin32` устанавливается только на Windows.
+Install `pywin32` only on Windows.
 
-1. Запустите `python main_windows_strict.py`. В трее появится иконка.
-2. Выделите ссылку и нажмите **Ctrl+Space** (или выбранную горячую клавишу). Скрипт сам отправит **Ctrl+C** и добавит ссылку в `download-list.txt`.
-3. Нажмите **Ctrl+Shift+Space** или пункт меню "Скачать", чтобы загрузить все ссылки из списка.
-   Во время загрузки в консоль выводится индикатор прогресса, а после завершения
-   появится уведомление "Complete".
-4. Через меню можно открыть папку загрузки, файл со списком ссылок, `info.txt` или изменить горячие клавиши.
-5. Выберите "Выход" для завершения работы скрипта.
+1. Run `python main_windows_strict.py` on Windows.
+2. A tray icon will appear. Highlight a link and press **Ctrl+Space** (or your configured hotkey). The script automatically sends **Ctrl+C** to copy the selection and appends it to `download-list.txt`.
+3. Use **Ctrl+Shift+Space** or the "Скачать" tray menu item to download all queued links.
+4. The tray menu also lets you open the downloads folder, view `download-list.txt`, open `info.txt`, or change the hotkey.
+5. Choose "Выход" in the tray menu to quit.
 
-Если горячие клавиши не работают, один раз выберите пункт "Горячие клавиши" в меню и нажмите нужное сочетание. Настройки также можно изменить вручную в файле `config.json`.
+Hotkeys can be changed at any time via the "Горячие клавиши" menu item or by
+editing the `config.json` file manually.
 
-Настройки хранятся в `config.json` рядом со скриптом. Все файлы скачиваются в папку `Downloads` в том же каталоге. Внутри автоматически создаются подпапки `Videos`, `Playlist Videos` и `Pictures`.
+The script stores settings in `config.json` next to the executable. All files
+are always saved to a `Downloads` folder located beside the script. Subfolders
+for videos, playlists and pictures are created automatically and this location
+cannot be changed.
 
-### Сборка exe-файла
+### Building an executable
 
-Для упрощения запуска можно собрать исполняемый файл с помощью PyInstaller. Не забудьте добавить файл иконки и модуль для уведомлений в трее:
+Use PyInstaller to bundle the script. Include the tray icon file and the
+pystray Windows backend:
 
 ```bash
 pyinstaller --onefile --windowed --icon=ico.ico \
@@ -38,16 +41,20 @@ pyinstaller --onefile --windowed --icon=ico.ico \
     main_windows_strict.py
 ```
 
-Файл `info.txt` включается автоматически, чтобы пункт "Инфо" работал в готовом exe.
+The `info.txt` file is bundled automatically so the "Инфо" menu item works
+in the built executable.
 
-Перед сборкой убедитесь, что зависимости установлены (запустите `python check_packages.py` или установите их вручную).
+Ensure all dependencies are installed **before** building. Either run
+`python check_packages.py` or install them manually as shown above.
 
-Для полной автоматизации используйте `build_exe.py`:
+To automate these steps you can use `build_exe.py`:
 
 ```bash
 python build_exe.py
 ```
 
-Скрипт проверит зависимости, запустит PyInstaller и по окончании предложит нажать любую клавишу, чтобы закрыть окно.
+The script checks packages and then runs PyInstaller with the correct
+options. When the build finishes you will be prompted to press any key
+to close the console.
 
 Error messages are written to `script.log` in the script folder.

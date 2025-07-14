@@ -11,7 +11,6 @@ required_packages = {
     'keyboard': 'keyboard',
     'PIL': 'pillow',
     'win32api': 'pywin32',
-    'tqdm': 'tqdm',
 }
 
 installed_new = False
