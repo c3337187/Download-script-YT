@@ -18,6 +18,7 @@ import threading
 from PIL import Image
 import subprocess
 
+
 def get_base_folder() -> str:
     """Returns the folder where persistent files should be stored."""
     if getattr(sys, 'frozen', False):
@@ -38,8 +39,6 @@ DOWNLOAD_LIST = os.path.join(BASE_FOLDER, 'download-list.txt')
 CONFIG_FILE = os.path.join(BASE_FOLDER, 'config.json')
 LOG_FILE = os.path.join(BASE_FOLDER, 'script.log')
 INFO_FILE = resource_path('info.txt')
-
-INFO_FILE = os.path.join(BASE_FOLDER, 'info.txt')
 
 # Эти переменные инициализируются после загрузки конфигурации
 DOWNLOADS_FOLDER = os.path.join(BASE_FOLDER, 'Downloads')
@@ -128,6 +127,7 @@ def download_video(url, folder):
         logging.error('Ошибка при скачивании YouTube-содержимого: %s', e)
         print(f"Ошибка при скачивании YouTube-содержимого: {e}")
 
+
 def download_playlist(url, folder):
     ydl_opts = {
         'format': 'best',
@@ -143,6 +143,7 @@ def download_playlist(url, folder):
     except Exception as e:
         logging.error('Ошибка при скачивании плейлиста: %s', e)
         print(f"Ошибка при скачивании плейлиста: {e}")
+
 
 def download_pinterest_image(url, folder):
     try:
@@ -226,14 +227,13 @@ def download_all(icon: Optional[pystray.Icon] = None) -> None:
 
 
 def add_link_from_clipboard() -> None:
-    """Copies selected text and saves it as a link."""
-    # Send Ctrl+C to grab the current selection. Wait briefly for the
-    # clipboard to update and then read its contents.  If the clipboard
-    # does not change, fall back to whatever text was already there.
-    previous = pyperclip.paste()
-    keyboard.send('ctrl+c')
+    """Copy the current selection and append it to download-list.txt."""
+    # Clear clipboard and send Ctrl+C to copy the highlighted text. Waiting
+    # a short moment ensures the clipboard is updated before reading it.
+    pyperclip.copy('')
+    keyboard.press_and_release('ctrl+c')
     time.sleep(0.2)
-    url = pyperclip.paste().strip() or previous.strip()
+    url = pyperclip.paste().strip()
     if not url:
         print("Не удалось скопировать ссылку. Возможно, она не выделена.")
         return
@@ -252,6 +252,7 @@ def add_link_from_clipboard() -> None:
         f.write(url + '\n')
     print(f"Добавлено в список: {url}")
 
+
 def main() -> None:
     """Запускает горячие клавиши и значок в трее."""
 
@@ -259,9 +260,6 @@ def main() -> None:
 
     config = load_config()
     ensure_directories()
-    if not os.path.exists(DOWNLOAD_LIST):
-        open(DOWNLOAD_LIST, 'a', encoding='utf-8').close()
-
     if not os.path.exists(DOWNLOAD_LIST):
         open(DOWNLOAD_LIST, 'a', encoding='utf-8').close()
 
@@ -308,14 +306,6 @@ def main() -> None:
             logging.error('Не удалось открыть папку загрузок: %s', e)
 
     def show_info(icon, item):
-        info_text = (
-            'Скрипт сохраняет выделенную ссылку по горячей клавише '
-            f"{config['add_hotkey']} в файл download-list.txt. "
-            'Загрузку можно запустить пунктом "Скачать" или по горячей клавише '
-            f"{config['download_hotkey']}. "
-            'Горячие клавиши настраиваются в config.json или через пункт '
-            '"Горячие клавиши".'
-        )
         """Open info.txt with usage instructions."""
         try:
             if os.path.exists(INFO_FILE):
@@ -353,4 +343,3 @@ def main() -> None:
 
 if __name__ == '__main__':
     main()
-

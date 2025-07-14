@@ -17,7 +17,7 @@ pip install yt_dlp pyperclip requests beautifulsoup4 pystray keyboard pillow pyw
 Install `pywin32` only on Windows.
 
 1. Run `python main_windows_strict.py` on Windows.
-2. A tray icon will appear. Highlight a link and press **Ctrl+Space** (or your configured hotkey). The script will copy the selection and add it to `download-list.txt`.
+2. A tray icon will appear. Highlight a link and press **Ctrl+Space** (or your configured hotkey). The script automatically sends **Ctrl+C** to copy the selection and appends it to `download-list.txt`.
 3. Use **Ctrl+Shift+Space** or the "Скачать" tray menu item to download all queued links.
 4. The tray menu also lets you open the downloads folder, view `download-list.txt`, open `info.txt`, or change the hotkey.
 5. Choose "Выход" in the tray menu to quit.
