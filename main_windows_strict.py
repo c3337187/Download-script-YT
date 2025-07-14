@@ -39,6 +39,7 @@ BASE_FOLDER = get_base_folder()
 DOWNLOAD_LIST = os.path.join(BASE_FOLDER, 'download-list.txt')
 CONFIG_FILE = os.path.join(BASE_FOLDER, 'config.json')
 LOG_FILE = os.path.join(BASE_FOLDER, 'script.log')
+INFO_FILE = os.path.join(BASE_FOLDER, 'info.txt')
 
 # Эти переменные инициализируются после загрузки конфигурации
 DOWNLOADS_FOLDER = os.path.join(BASE_FOLDER, 'Downloads')
@@ -259,6 +260,8 @@ def main() -> None:
 
     config = load_config()
     ensure_directories()
+    if not os.path.exists(DOWNLOAD_LIST):
+        open(DOWNLOAD_LIST, 'a', encoding='utf-8').close()
 
     add_hotkey = config.get('add_hotkey', DEFAULT_CONFIG['add_hotkey'])
     download_hotkey = config.get('download_hotkey', DEFAULT_CONFIG['download_hotkey'])
@@ -303,6 +306,18 @@ def main() -> None:
             logging.error('Не удалось открыть папку загрузок: %s', e)
 
     def show_info(icon, item):
+        """Open info.txt with usage instructions."""
+        try:
+            if os.path.exists(INFO_FILE):
+                if sys.platform.startswith('win'):
+                    os.startfile(INFO_FILE)
+                else:
+                    subprocess.Popen(['xdg-open', INFO_FILE])
+            else:
+                icon.notify('Информация', 'Файл info.txt не найден')
+        except Exception as e:
+            logging.error('Не удалось открыть info.txt: %s', e)
+
         info_text = (
             'Скрипт сохраняет выделенную ссылку по горячей клавише '
             f"{config['add_hotkey']} в файл download-list.txt. "
