@@ -14,6 +14,7 @@ import keyboard
 import pystray
 import pyperclip
 
+
 import threading
 
 from PIL import Image
@@ -68,11 +69,6 @@ def ensure_directories() -> None:
     os.makedirs(VIDEOS_FOLDER, exist_ok=True)
     os.makedirs(PLAYLIST_FOLDER, exist_ok=True)
     os.makedirs(PICTURES_FOLDER, exist_ok=True)
-
-
-# Инициализация папок
-ensure_directories()
-
 
 def load_config() -> dict:
     if os.path.exists(CONFIG_FILE):
@@ -231,10 +227,19 @@ def download_all(icon: Optional[pystray.Icon] = None) -> None:
 
 
 def add_link_from_clipboard() -> None:
-    """Копирует выделенный текст и сохраняет как ссылку."""
+
+    """Копирует выделенный текст в буфер и сохраняет его как ссылку."""
+    # Очистим буфер, затем имитируем Ctrl+C и ждём появления текста
+    pyperclip.copy("")
     keyboard.press_and_release('ctrl+c')
-    time.sleep(0.1)
-    url = pyperclip.paste().strip()
+    end = time.time() + 1.0
+    url = ""
+    while time.time() < end:
+        url = pyperclip.paste().strip()
+        if url:
+            break
+        time.sleep(0.05)
+
     if not url:
         print("Буфер обмена пуст.")
         return
@@ -317,19 +322,6 @@ def main() -> None:
                 icon.notify('Информация', 'Файл info.txt не найден')
         except Exception as e:
             logging.error('Не удалось открыть info.txt: %s', e)
-
-        info_text = (
-            'Скрипт сохраняет выделенную ссылку по горячей клавише '
-            f"{config['add_hotkey']} в файл download-list.txt. "
-            'Загрузку можно запустить пунктом "Скачать" или по горячей клавише '
-            f"{config['download_hotkey']}. "
-            'Горячие клавиши настраиваются в config.json или через пункт '
-            '"Горячие клавиши".'
-        )
-        try:
-            icon.notify('Информация', info_text)
-        except Exception:
-            print(info_text)
 
     icon_path = resource_path('ico.ico')
     image = Image.open(icon_path) if os.path.exists(icon_path) else None

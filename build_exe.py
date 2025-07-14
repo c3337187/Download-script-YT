@@ -18,9 +18,7 @@ def main() -> None:
         '--windowed',
         '--icon=ico.ico',
         f'--add-data=ico.ico{sep}.',
-
         f'--add-data=info.txt{sep}.',
-
         'main_windows_strict.py',
     ]
     build = subprocess.run(cmd)
