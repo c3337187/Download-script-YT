@@ -14,6 +14,7 @@ import keyboard
 import pystray
 import pyperclip
 
+
 import threading
 
 from PIL import Image
@@ -226,6 +227,7 @@ def download_all(icon: Optional[pystray.Icon] = None) -> None:
 
 
 def add_link_from_clipboard() -> None:
+
     """Копирует выделенный текст в буфер и сохраняет его как ссылку."""
     # Очистим буфер, затем имитируем Ctrl+C и ждём появления текста
     pyperclip.copy("")
@@ -237,6 +239,7 @@ def add_link_from_clipboard() -> None:
         if url:
             break
         time.sleep(0.05)
+
     if not url:
         print("Буфер обмена пуст.")
         return
