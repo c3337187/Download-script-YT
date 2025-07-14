@@ -13,7 +13,6 @@ from bs4 import BeautifulSoup
 import keyboard
 import pystray
 import pyperclip
-
 import threading
 
 from PIL import Image
@@ -39,6 +38,7 @@ BASE_FOLDER = get_base_folder()
 DOWNLOAD_LIST = os.path.join(BASE_FOLDER, 'download-list.txt')
 CONFIG_FILE = os.path.join(BASE_FOLDER, 'config.json')
 LOG_FILE = os.path.join(BASE_FOLDER, 'script.log')
+INFO_FILE = resource_path('info.txt')
 
 INFO_FILE = os.path.join(BASE_FOLDER, 'info.txt')
 =======
@@ -61,8 +61,8 @@ downloading = threading.Event()
 
 
 DEFAULT_CONFIG = {
-    'add_hotkey': 'ctrl+b',
-    'download_hotkey': 'ctrl+shift+b',
+    'add_hotkey': 'ctrl+space',
+    'download_hotkey': 'ctrl+shift+space',
 }
 
 
@@ -71,11 +71,6 @@ def ensure_directories() -> None:
     os.makedirs(VIDEOS_FOLDER, exist_ok=True)
     os.makedirs(PLAYLIST_FOLDER, exist_ok=True)
     os.makedirs(PICTURES_FOLDER, exist_ok=True)
-
-
-# Инициализация папок
-ensure_directories()
-
 
 def load_config() -> dict:
     if os.path.exists(CONFIG_FILE):
@@ -234,12 +229,19 @@ def download_all(icon: Optional[pystray.Icon] = None) -> None:
 
 
 def add_link_from_clipboard() -> None:
-    """Копирует выделенный текст и сохраняет как ссылку."""
-    keyboard.press_and_release('ctrl+c')
-    time.sleep(0.1)
-    url = pyperclip.paste().strip()
-    if not url:
-        print("Буфер обмена пуст.")
+    """Копирует выделенный текст в буфер и сохраняет его как ссылку."""
+    before = pyperclip.paste()
+    keyboard.send('ctrl+c')
+    end = time.time() + 1.5
+    url = ""
+    while time.time() < end:
+        url = pyperclip.paste().strip()
+        if url and url != before:
+            break
+        time.sleep(0.05)
+    if not url or url == before:
+        print("Не удалось скопировать ссылку. Возможно, она не выделена.")
+
         return
 
     existing = []
@@ -263,6 +265,8 @@ def main() -> None:
 
     config = load_config()
     ensure_directories()
+    if not os.path.exists(DOWNLOAD_LIST):
+        open(DOWNLOAD_LIST, 'a', encoding='utf-8').close()
 
     if not os.path.exists(DOWNLOAD_LIST):
         open(DOWNLOAD_LIST, 'a', encoding='utf-8').close()
@@ -312,7 +316,14 @@ def main() -> None:
             logging.error('Не удалось открыть папку загрузок: %s', e)
 
     def show_info(icon, item):
-
+        info_text = (
+            'Скрипт сохраняет выделенную ссылку по горячей клавише '
+            f"{config['add_hotkey']} в файл download-list.txt. "
+            'Загрузку можно запустить пунктом "Скачать" или по горячей клавише '
+            f"{config['download_hotkey']}. "
+            'Горячие клавиши настраиваются в config.json или через пункт '
+            '"Горячие клавиши".'
+        )
         """Open info.txt with usage instructions."""
         try:
             if os.path.exists(INFO_FILE):
@@ -324,19 +335,6 @@ def main() -> None:
                 icon.notify('Информация', 'Файл info.txt не найден')
         except Exception as e:
             logging.error('Не удалось открыть info.txt: %s', e)
-=======
-        info_text = (
-            'Скрипт сохраняет выделенную ссылку по горячей клавише '
-            f"{config['add_hotkey']} в файл download-list.txt. "
-            'Загрузку можно запустить пунктом "Скачать" или по горячей клавише '
-            f"{config['download_hotkey']}. "
-            'Горячие клавиши настраиваются в config.json или через пункт '
-            '"Горячие клавиши".'
-        )
-        try:
-            icon.notify('Информация', info_text)
-        except Exception:
-            print(info_text)
 
 
     icon_path = resource_path('ico.ico')

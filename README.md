@@ -17,9 +17,8 @@ pip install yt_dlp pyperclip requests beautifulsoup4 pystray keyboard pillow pyw
 Install `pywin32` only on Windows.
 
 1. Run `python main_windows_strict.py` on Windows.
-2. A tray icon will appear. Use **Ctrl+B** (or your configured hotkey) to add the selected link to `download-list.txt`.
-3. Use **Ctrl+Shift+B** or the "Скачать" tray menu item to download all queued links.
-
+2. A tray icon will appear. Highlight a link and press **Ctrl+Space** (or your configured hotkey). The script will copy the selection and add it to `download-list.txt`.
+3. Use **Ctrl+Shift+Space** or the "Скачать" tray menu item to download all queued links.
 4. The tray menu also lets you open the downloads folder, view `download-list.txt`, open `info.txt`, or change the hotkey.
 5. Choose "Выход" in the tray menu to quit.
 
@@ -30,13 +29,6 @@ The script stores settings in `config.json` next to the executable. All files
 are always saved to a `Downloads` folder located beside the script. Subfolders
 for videos, playlists and pictures are created automatically and this location
 cannot be changed.
-=======
-4. The tray menu also lets you open the downloads folder, view `download-list.txt`, показать "Инфо" или изменить горячую клавишу.
-5. Choose "Выход" in the tray menu to quit.
-
-The script stores settings in `config.json` next to the executable. Files are
-saved to a `Downloads` folder beside the script. Subfolders for videos,
-playlists and pictures are created automatically.
 
 
 ### Building an executable
@@ -49,6 +41,9 @@ pyinstaller --onefile --windowed --icon=ico.ico \
     --add-data "ico.ico;." --hidden-import pystray._win32 \
     main_windows_strict.py
 ```
+
+The `info.txt` file is bundled automatically so the "Инфо" menu item works
+in the built executable.
 
 Ensure all dependencies are installed **before** building. Either run
 `python check_packages.py` or install them manually as shown above.
