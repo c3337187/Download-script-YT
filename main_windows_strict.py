@@ -13,8 +13,6 @@ from bs4 import BeautifulSoup
 import keyboard
 import pystray
 import pyperclip
-
-
 import threading
 
 from PIL import Image
@@ -40,7 +38,7 @@ BASE_FOLDER = get_base_folder()
 DOWNLOAD_LIST = os.path.join(BASE_FOLDER, 'download-list.txt')
 CONFIG_FILE = os.path.join(BASE_FOLDER, 'config.json')
 LOG_FILE = os.path.join(BASE_FOLDER, 'script.log')
-INFO_FILE = os.path.join(BASE_FOLDER, 'info.txt')
+INFO_FILE = resource_path('info.txt')
 
 # Эти переменные инициализируются после загрузки конфигурации
 DOWNLOADS_FOLDER = os.path.join(BASE_FOLDER, 'Downloads')
@@ -59,8 +57,8 @@ downloading = threading.Event()
 
 
 DEFAULT_CONFIG = {
-    'add_hotkey': 'ctrl+b',
-    'download_hotkey': 'ctrl+shift+b',
+    'add_hotkey': 'ctrl+space',
+    'download_hotkey': 'ctrl+shift+space',
 }
 
 
@@ -227,21 +225,19 @@ def download_all(icon: Optional[pystray.Icon] = None) -> None:
 
 
 def add_link_from_clipboard() -> None:
-
     """Копирует выделенный текст в буфер и сохраняет его как ссылку."""
-    # Очистим буфер, затем имитируем Ctrl+C и ждём появления текста
-    pyperclip.copy("")
-    keyboard.press_and_release('ctrl+c')
-    end = time.time() + 1.0
+    before = pyperclip.paste()
+    keyboard.send('ctrl+c')
+    end = time.time() + 1.5
     url = ""
     while time.time() < end:
         url = pyperclip.paste().strip()
-        if url:
+        if url and url != before:
             break
         time.sleep(0.05)
+    if not url or url == before:
+        print("Не удалось скопировать ссылку. Возможно, она не выделена.")
 
-    if not url:
-        print("Буфер обмена пуст.")
         return
 
     existing = []
