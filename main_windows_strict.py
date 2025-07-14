@@ -39,7 +39,10 @@ BASE_FOLDER = get_base_folder()
 DOWNLOAD_LIST = os.path.join(BASE_FOLDER, 'download-list.txt')
 CONFIG_FILE = os.path.join(BASE_FOLDER, 'config.json')
 LOG_FILE = os.path.join(BASE_FOLDER, 'script.log')
+
 INFO_FILE = os.path.join(BASE_FOLDER, 'info.txt')
+=======
+
 
 # Эти переменные инициализируются после загрузки конфигурации
 DOWNLOADS_FOLDER = os.path.join(BASE_FOLDER, 'Downloads')
@@ -260,8 +263,11 @@ def main() -> None:
 
     config = load_config()
     ensure_directories()
+
     if not os.path.exists(DOWNLOAD_LIST):
         open(DOWNLOAD_LIST, 'a', encoding='utf-8').close()
+=======
+
 
     add_hotkey = config.get('add_hotkey', DEFAULT_CONFIG['add_hotkey'])
     download_hotkey = config.get('download_hotkey', DEFAULT_CONFIG['download_hotkey'])
@@ -306,6 +312,7 @@ def main() -> None:
             logging.error('Не удалось открыть папку загрузок: %s', e)
 
     def show_info(icon, item):
+
         """Open info.txt with usage instructions."""
         try:
             if os.path.exists(INFO_FILE):
@@ -317,6 +324,20 @@ def main() -> None:
                 icon.notify('Информация', 'Файл info.txt не найден')
         except Exception as e:
             logging.error('Не удалось открыть info.txt: %s', e)
+=======
+        info_text = (
+            'Скрипт сохраняет выделенную ссылку по горячей клавише '
+            f"{config['add_hotkey']} в файл download-list.txt. "
+            'Загрузку можно запустить пунктом "Скачать" или по горячей клавише '
+            f"{config['download_hotkey']}. "
+            'Горячие клавиши настраиваются в config.json или через пункт '
+            '"Горячие клавиши".'
+        )
+        try:
+            icon.notify('Информация', info_text)
+        except Exception:
+            print(info_text)
+
 
     icon_path = resource_path('ico.ico')
     image = Image.open(icon_path) if os.path.exists(icon_path) else None
