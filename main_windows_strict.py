@@ -1,44 +1,103 @@
 import os
 import sys
 import subprocess
-import pyperclip
+import atexit
+import time
 from urllib.parse import urlparse
 
 # === Проверка и установка необходимых пакетов ===
-required_packages = ['yt_dlp', 'pyperclip', 'requests', 'beautifulsoup4']
+required_packages = [
+    'yt_dlp',
+    'pyperclip',
+    'requests',
+    'beautifulsoup4',
+    'pystray',
+    'keyboard',
+    'pillow',
+    'pywin32',
+]
+installed_new = False
 for package in required_packages:
     try:
         __import__(package if package != 'beautifulsoup4' else 'bs4')
     except ImportError:
+        if package == 'pywin32' and not sys.platform.startswith('win'):
+            continue
         print(f"⏳ Устанавливается пакет: {package}")
-        subprocess.check_call([sys.executable, '-m', 'pip', 'install', package])
+        subprocess.check_call([
+            sys.executable,
+            '-m',
+            'pip',
+            'install',
+            '--quiet',
+            '--disable-pip-version-check',
+            package,
+        ])
+        installed_new = True
+
+if installed_new:
+    print("✅ Зависимости установлены. Перезапустите скрипт.")
+    sys.exit(0)
 
 import yt_dlp
 import requests
 from bs4 import BeautifulSoup
+import keyboard
+import pystray
+import pyperclip
 
-# === Путь к папке Downloads в текущей директории ===
-def get_base_folder():
+from PIL import Image
+
+
+def get_base_folder() -> str:
+    """Returns the folder where persistent files should be stored."""
     if getattr(sys, 'frozen', False):
         return os.path.dirname(sys.executable)
     return os.path.dirname(os.path.abspath(__file__))
 
-def get_video_url():
-    url = pyperclip.paste().strip()
-    if url.startswith('http'):
-        print(f"Ссылка взята из буфера: {url}")
-        return url
-    else:
+
+def resource_path(name: str) -> str:
+    """Resolve resource path for bundled executables."""
+    if getattr(sys, 'frozen', False):
+        return os.path.join(sys._MEIPASS, name)  # type: ignore[attr-defined]
+    return os.path.join(get_base_folder(), name)
+
+
+# === Пути и файлы ===
+BASE_FOLDER = get_base_folder()
+DOWNLOADS_FOLDER = os.path.join(BASE_FOLDER, 'Downloads')
+VIDEOS_FOLDER = os.path.join(DOWNLOADS_FOLDER, 'Videos')
+PLAYLIST_FOLDER = os.path.join(VIDEOS_FOLDER, 'Playlist Videos')
+PICTURES_FOLDER = os.path.join(DOWNLOADS_FOLDER, 'Pictures')
+DOWNLOAD_LIST = os.path.join(BASE_FOLDER, 'download-list')
+
+os.makedirs(VIDEOS_FOLDER, exist_ok=True)
+os.makedirs(PLAYLIST_FOLDER, exist_ok=True)
+os.makedirs(PICTURES_FOLDER, exist_ok=True)
+
+
+def ensure_single_instance() -> None:
+    """Предотвращает запуск нескольких экземпляров скрипта."""
+    if sys.platform.startswith('win'):
+        import msvcrt
+        lock_path = os.path.join(BASE_FOLDER, 'script.lock')
+        lock_file = open(lock_path, 'w')
         try:
-            url = input("В буфере нет корректной ссылки. Введите URL:\n").strip()
-            if url.startswith('http'):
-                return url
-            else:
-                print("Некорректный URL. Завершаем.")
-                sys.exit(1)
-        except Exception:
-            print("Ошибка при вводе. Завершаем.")
-            sys.exit(1)
+            msvcrt.locking(lock_file.fileno(), msvcrt.LK_NBLCK, 1)
+        except OSError:
+            print('Скрипт уже запущен.')
+            sys.exit(0)
+
+        def release_lock() -> None:
+            try:
+                msvcrt.locking(lock_file.fileno(), msvcrt.LK_UNLCK, 1)
+                lock_file.close()
+                os.remove(lock_path)
+            except Exception:
+                pass
+
+        atexit.register(release_lock)
+
 
 def download_video(url, folder):
     ydl_opts = {
@@ -87,42 +146,91 @@ def download_pinterest_image(url, folder):
     except Exception as e:
         print(f"Ошибка при скачивании изображения с Pinterest: {e}")
 
-def main():
-    base_folder = get_base_folder()
-    downloads_folder = os.path.join(base_folder, 'Downloads')
-    videos_folder = os.path.join(downloads_folder, 'Videos')
-    playlist_folder = os.path.join(videos_folder, 'Playlist Videos')
-    pictures_folder = os.path.join(downloads_folder, 'Pictures')
 
-    os.makedirs(videos_folder, exist_ok=True)
-    os.makedirs(playlist_folder, exist_ok=True)
-    os.makedirs(pictures_folder, exist_ok=True)
-
-    url = get_video_url()
+def handle_url(url: str) -> None:
+    """Определяет тип ссылки и запускает скачивание."""
     hostname = urlparse(url).hostname or ""
     hostname = hostname.lower()
 
     if "youtube.com/playlist" in url:
-        print(f"Это плейлист YouTube. Скачиваем всё в: {playlist_folder}")
-        download_playlist(url, playlist_folder)
+        print(f"Это плейлист YouTube. Скачиваем всё в: {PLAYLIST_FOLDER}")
+        download_playlist(url, PLAYLIST_FOLDER)
 
     elif "youtube.com" in hostname or "youtu.be" in hostname:
-        print(f"Это видео YouTube. Скачиваем в: {videos_folder}")
-        download_video(url, videos_folder)
+        print(f"Это видео YouTube. Скачиваем в: {VIDEOS_FOLDER}")
+        download_video(url, VIDEOS_FOLDER)
 
     elif "pinterest.com" in hostname:
-        print(f"Это Pinterest ссылка. Пытаемся скачать...")
-        download_pinterest_image(url, pictures_folder)
+        print("Это Pinterest ссылка. Пытаемся скачать...")
+        download_pinterest_image(url, PICTURES_FOLDER)
 
     else:
         print("Сайт не поддерживается этим скриптом.")
 
+
+def download_all() -> None:
+    """Скачивает все ссылки из файла download-list."""
+    if not os.path.exists(DOWNLOAD_LIST):
+        print("Файл download-list не найден.")
+        return
+
+    with open(DOWNLOAD_LIST, 'r', encoding='utf-8') as f:
+        urls = [line.strip() for line in f if line.strip()]
+
+    if not urls:
+        print("Список ссылок пуст.")
+        return
+
+    for url in urls:
+        handle_url(url)
+
+    open(DOWNLOAD_LIST, 'w', encoding='utf-8').close()
     print("Скачивание завершено!")
 
-    try:
-        input("⚠️ Нажмите Enter, чтобы закрыть окно...")
-    except:
-        pass
+
+def add_link_from_clipboard() -> None:
+    """Копирует выделенный текст и сохраняет как ссылку."""
+    keyboard.press_and_release('ctrl+c')
+    time.sleep(0.1)
+    url = pyperclip.paste().strip()
+    if not url:
+        print("Буфер обмена пуст.")
+        return
+
+    with open(DOWNLOAD_LIST, 'a', encoding='utf-8') as f:
+        f.write(url + '\n')
+    print(f"Добавлено в список: {url}")
+
+def main() -> None:
+    """Запускает горячие клавиши и значок в трее."""
+
+    ensure_single_instance()
+
+    def on_download(icon, item):
+        download_all()
+
+    def on_exit(icon, item):
+        icon.stop()
+
+    icon_path = resource_path('ico.ico')
+    image = Image.open(icon_path) if os.path.exists(icon_path) else None
+    menu = pystray.Menu(
+        pystray.MenuItem('Скачать', on_download),
+        pystray.MenuItem('Выход', on_exit),
+    )
+    tray_icon = pystray.Icon('YTDownloader', image, 'YT Downloader', menu)
+
+    keyboard.add_hotkey('ctrl+b', add_link_from_clipboard)
+    keyboard.add_hotkey('ctrl+shift+b', download_all)
+
+    print('Значок размещён в трее. Горячие клавиши Ctrl+B и Ctrl+Shift+B активны.')
+
+    tray_icon.run()
+
+    keyboard.unhook_all_hotkeys()
+
+    print('Скрипт завершён.')
 
 if __name__ == '__main__':
     main()
+
