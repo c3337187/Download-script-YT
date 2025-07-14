@@ -13,7 +13,6 @@ from bs4 import BeautifulSoup
 import keyboard
 import pystray
 import pyperclip
-
 import threading
 
 from PIL import Image
@@ -238,6 +237,7 @@ def add_link_from_clipboard() -> None:
         time.sleep(0.05)
     if not url or url == before:
         print("Не удалось скопировать ссылку. Возможно, она не выделена.")
+
         return
 
     existing = []
