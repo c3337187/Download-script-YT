@@ -13,12 +13,10 @@ from bs4 import BeautifulSoup
 import keyboard
 import pystray
 import pyperclip
-
 import threading
 
 from PIL import Image
 import subprocess
-
 
 def get_base_folder() -> str:
     """Returns the folder where persistent files should be stored."""
@@ -40,6 +38,8 @@ DOWNLOAD_LIST = os.path.join(BASE_FOLDER, 'download-list.txt')
 CONFIG_FILE = os.path.join(BASE_FOLDER, 'config.json')
 LOG_FILE = os.path.join(BASE_FOLDER, 'script.log')
 INFO_FILE = resource_path('info.txt')
+
+INFO_FILE = os.path.join(BASE_FOLDER, 'info.txt')
 
 # Эти переменные инициализируются после загрузки конфигурации
 DOWNLOADS_FOLDER = os.path.join(BASE_FOLDER, 'Downloads')
@@ -262,6 +262,9 @@ def main() -> None:
     if not os.path.exists(DOWNLOAD_LIST):
         open(DOWNLOAD_LIST, 'a', encoding='utf-8').close()
 
+    if not os.path.exists(DOWNLOAD_LIST):
+        open(DOWNLOAD_LIST, 'a', encoding='utf-8').close()
+
     add_hotkey = config.get('add_hotkey', DEFAULT_CONFIG['add_hotkey'])
     download_hotkey = config.get('download_hotkey', DEFAULT_CONFIG['download_hotkey'])
 
@@ -305,6 +308,14 @@ def main() -> None:
             logging.error('Не удалось открыть папку загрузок: %s', e)
 
     def show_info(icon, item):
+        info_text = (
+            'Скрипт сохраняет выделенную ссылку по горячей клавише '
+            f"{config['add_hotkey']} в файл download-list.txt. "
+            'Загрузку можно запустить пунктом "Скачать" или по горячей клавише '
+            f"{config['download_hotkey']}. "
+            'Горячие клавиши настраиваются в config.json или через пункт '
+            '"Горячие клавиши".'
+        )
         """Open info.txt with usage instructions."""
         try:
             if os.path.exists(INFO_FILE):
